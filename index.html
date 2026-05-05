@@ -223,18 +223,21 @@ async function getAQI(){
         return;
     }
 
-    const apiKey = "6a8aca189f47b04d9331481e296bd1ab";
+    const apiKey =
+    "6a8aca189f47b04d9331481e296bd1ab";
 
     try{
 
-        // Step 1: Get city coordinates
+        // Get Coordinates
 
         let geoURL =
         `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${apiKey}`;
 
-        let geoResponse = await fetch(geoURL);
+        let geoResponse =
+            await fetch(geoURL);
 
-        let geoData = await geoResponse.json();
+        let geoData =
+            await geoResponse.json();
 
         if(geoData.length === 0){
             alert("City not found");
@@ -244,28 +247,30 @@ async function getAQI(){
         let lat = geoData[0].lat;
         let lon = geoData[0].lon;
 
-        // Step 2: Get AQI Data
+        // AQI Data
 
         let airURL =
         `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`;
 
-        let airResponse = await fetch(airURL);
+        let airResponse =
+            await fetch(airURL);
 
-        let airData = await airResponse.json();
+        let airData =
+            await airResponse.json();
 
-        // Step 3: Get Weather Data
+        // Weather Data
 
         let weatherURL =
         `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
 
-        let weatherResponse = await fetch(weatherURL);
+        let weatherResponse =
+            await fetch(weatherURL);
 
-        let weatherData = await weatherResponse.json();
+        let weatherData =
+            await weatherResponse.json();
 
         let apiAQI =
             airData.list[0].main.aqi;
-
-        // Convert API AQI Scale
 
         let aqi;
 
@@ -317,7 +322,7 @@ async function getAQI(){
             status = "Moderate";
 
             advice =
-            "Sensitive people should avoid long outdoor exposure.";
+            "Sensitive people should avoid outdoor activities.";
 
             card.classList.add("moderate");
 
@@ -374,9 +379,9 @@ async function getAQI(){
 
     catch(error){
 
-        alert("Error fetching AQI data");
-
         console.log(error);
+
+        alert("Error fetching AQI data");
 
     }
 
