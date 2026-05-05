@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Air Quality Monitoring Dashboard</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg,#1d2671,#c33764);
+    min-height:100vh;
+    color:white;
+    transition:0.5s;
+}
+
+.dark-mode{
+    background: linear-gradient(135deg,#000000,#434343);
+    color:white;
+}
+
+.navbar{
+    backdrop-filter: blur(10px);
+    background: rgba(255,255,255,0.1);
+}
+
+.glass{
+    background: rgba(255,255,255,0.15);
+    border-radius:20px;
+    backdrop-filter: blur(10px);
+    box-shadow:0 8px 32px rgba(0,0,0,0.3);
+    color:white;
+}
+
+.card-box{
+    padding:20px;
+    text-align:center;
+    transition:0.4s;
+}
+
+.card-box:hover{
+    transform:scale(1.05);
+}
+
+.aqi-number{
+    font-size:70px;
+    font-weight:bold;
+}
+
+.good{
+    background:#28a745 !important;
+}
+
+.moderate{
+    background:#ffc107 !important;
+    color:black !important;
+}
+
+.unhealthy{
+    background:#dc3545 !important;
+}
+
+.hazardous{
+    background:#6f0000 !important;
+}
+
+.footer{
+    text-align:center;
+    margin-top:30px;
+    padding:15px;
+}
+
+.alert-box{
+    display:none;
+}
+
+</style>
+</head>
+
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark px-4">
+    <div class="container-fluid">
+        <h3>🌍 Air Quality Dashboard</h3>
+
+        <div>
+            <span id="time" class="me-3"></span>
+
+            <button class="btn btn-light btn-sm" onclick="toggleDarkMode()">
+                🌙 Toggle Mode
+            </button>
+        </div>
+    </div>
+</nav>
+
+<div class="container py-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-lg-8">
+
+            <div class="glass p-4 text-center" id="aqiCard">
+
+                <h2 class="mb-4">🌦️ Real-Time AQI Monitoring</h2>
+
+                <input type="text"
+                       id="city"
+                       class="form-control mb-3"
+                       placeholder="Enter City Name">
+
+                <button class="btn btn-primary w-100 mb-4"
+                        onclick="getAQI()">
+                    Check Air Quality
+                </button>
+
+                <div class="aqi-number" id="aqiValue">--</div>
+
+                <h3 id="statusText">AQI Status</h3>
+
+                <p id="healthAdvice">
+                    Health recommendations will appear here.
+                </p>
+
+                <div class="alert alert-danger alert-box" id="alertBox">
+                    ⚠️ Warning: Hazardous Air Quality Detected!
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="row mt-5 g-4">
+
+        <div class="col-md-3">
+            <div class="glass card-box">
+                <h4>🌡️ Temperature</h4>
+                <h2 id="temp">-- °C</h2>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="glass card-box">
+                <h4>💧 Humidity</h4>
+                <h2 id="humidity">-- %</h2>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="glass card-box">
+                <h4>💨 PM2.5</h4>
+                <h2 id="pm25">--</h2>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="glass card-box">
+                <h4>🏭 PM10</h4>
+                <h2 id="pm10">--</h2>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row mt-5">
+
+        <div class="col-lg-10 mx-auto">
+
+            <div class="glass p-4">
+
+                <h3 class="text-center mb-4">
+                    📊 Weekly AQI Trend
+                </h3>
+
+                <canvas id="aqiChart"></canvas>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="footer">
+    🌱 Environmental Studies Project
+</div>
+
+<script>
+
+let chart;
+
+function updateClock(){
+
+    let now = new Date();
+
+    document.getElementById("time").innerHTML =
+        now.toLocaleTimeString();
+
+}
+
+setInterval(updateClock,1000);
+
+function toggleDarkMode(){
+
+    document.body.classList.toggle("dark-mode");
+
+}
+
+async function getAQI(){
+
+    let city =
+        document.getElementById("city").value;
+
+    if(city === ""){
+        alert("Please enter city name");
+        return;
+    }
+
+    const apiKey = "6a8aca189f47b04d9331481e296bd1ab";
+
+    try{
+
+        // Step 1: Get city coordinates
+
+        let geoURL =
+        `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${apiKey}`;
+
+        let geoResponse = await fetch(geoURL);
+
+        let geoData = await geoResponse.json();
+
+        if(geoData.length === 0){
+            alert("City not found");
+            return;
+        }
+
+        let lat = geoData[0].lat;
+        let lon = geoData[0].lon;
+
+        // Step 2: Get AQI Data
+
+        let airURL =
+        `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`;
+
+        let airResponse = await fetch(airURL);
+
+        let airData = await airResponse.json();
+
+        // Step 3: Get Weather Data
+
+        let weatherURL =
+        `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+
+        let weatherResponse = await fetch(weatherURL);
+
+        let weatherData = await weatherResponse.json();
+
+        let apiAQI =
+            airData.list[0].main.aqi;
+
+        // Convert API AQI Scale
+
+        let aqi;
+
+        if(apiAQI === 1) aqi = 50;
+        else if(apiAQI === 2) aqi = 100;
+        else if(apiAQI === 3) aqi = 150;
+        else if(apiAQI === 4) aqi = 220;
+        else aqi = 320;
+
+        let temperature =
+            weatherData.main.temp;
+
+        let humidity =
+            weatherData.main.humidity;
+
+        let pm25 =
+            airData.list[0].components.pm2_5;
+
+        let pm10 =
+            airData.list[0].components.pm10;
+
+        let status = "";
+        let advice = "";
+
+        let card =
+            document.getElementById("aqiCard");
+
+        let alertBox =
+            document.getElementById("alertBox");
+
+        card.className =
+            "glass p-4 text-center";
+
+        alertBox.style.display = "none";
+
+        if(aqi <= 50){
+
+            status = "Good";
+
+            advice =
+            "Air quality is safe and healthy.";
+
+            card.classList.add("good");
+
+        }
+
+        else if(aqi <= 100){
+
+            status = "Moderate";
+
+            advice =
+            "Sensitive people should avoid long outdoor exposure.";
+
+            card.classList.add("moderate");
+
+        }
+
+        else if(aqi <= 200){
+
+            status = "Unhealthy";
+
+            advice =
+            "Wear masks outdoors.";
+
+            card.classList.add("unhealthy");
+
+        }
+
+        else{
+
+            status = "Hazardous";
+
+            advice =
+            "Stay indoors and avoid outdoor activities.";
+
+            card.classList.add("hazardous");
+
+            alertBox.style.display = "block";
+
+        }
+
+        document.getElementById("aqiValue").innerHTML =
+            aqi;
+
+        document.getElementById("statusText").innerHTML =
+            status + " - " + city;
+
+        document.getElementById("healthAdvice").innerHTML =
+            advice;
+
+        document.getElementById("temp").innerHTML =
+            temperature + " °C";
+
+        document.getElementById("humidity").innerHTML =
+            humidity + " %";
+
+        document.getElementById("pm25").innerHTML =
+            pm25.toFixed(1);
+
+        document.getElementById("pm10").innerHTML =
+            pm10.toFixed(1);
+
+        generateChart(aqi);
+
+    }
+
+    catch(error){
+
+        alert("Error fetching AQI data");
+
+        console.log(error);
+
+    }
+
+}
+</script>
+
+</body>
+</html>
