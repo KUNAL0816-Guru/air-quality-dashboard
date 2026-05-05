@@ -196,6 +196,8 @@ body{
 
 let chart;
 
+// Live Clock
+
 function updateClock(){
 
     let now = new Date();
@@ -207,11 +209,15 @@ function updateClock(){
 
 setInterval(updateClock,1000);
 
+// Dark Mode
+
 function toggleDarkMode(){
 
     document.body.classList.toggle("dark-mode");
 
 }
+
+// Main AQI Function
 
 async function getAQI(){
 
@@ -219,8 +225,11 @@ async function getAQI(){
         document.getElementById("city").value;
 
     if(city === ""){
+
         alert("Please enter city name");
+
         return;
+
     }
 
     const apiKey =
@@ -240,8 +249,11 @@ async function getAQI(){
             await geoResponse.json();
 
         if(geoData.length === 0){
+
             alert("City not found");
+
             return;
+
         }
 
         let lat = geoData[0].lat;
@@ -269,16 +281,44 @@ async function getAQI(){
         let weatherData =
             await weatherResponse.json();
 
+        // AQI Conversion
+
         let apiAQI =
             airData.list[0].main.aqi;
 
         let aqi;
 
-        if(apiAQI === 1) aqi = 50;
-        else if(apiAQI === 2) aqi = 100;
-        else if(apiAQI === 3) aqi = 150;
-        else if(apiAQI === 4) aqi = 220;
-        else aqi = 320;
+        if(apiAQI === 1){
+
+            aqi = 50;
+
+        }
+
+        else if(apiAQI === 2){
+
+            aqi = 100;
+
+        }
+
+        else if(apiAQI === 3){
+
+            aqi = 150;
+
+        }
+
+        else if(apiAQI === 4){
+
+            aqi = 220;
+
+        }
+
+        else{
+
+            aqi = 320;
+
+        }
+
+        // Weather Details
 
         let temperature =
             weatherData.main.temp;
@@ -291,6 +331,8 @@ async function getAQI(){
 
         let pm10 =
             airData.list[0].components.pm10;
+
+        // AQI Status
 
         let status = "";
         let advice = "";
@@ -352,6 +394,8 @@ async function getAQI(){
 
         }
 
+        // Update UI
+
         document.getElementById("aqiValue").innerHTML =
             aqi;
 
@@ -373,6 +417,8 @@ async function getAQI(){
         document.getElementById("pm10").innerHTML =
             pm10.toFixed(1);
 
+        // Generate Graph
+
         generateChart(aqi);
 
     }
@@ -386,6 +432,92 @@ async function getAQI(){
     }
 
 }
+
+// Chart Function
+
+function generateChart(aqi){
+
+    let ctx =
+        document.getElementById("aqiChart");
+
+    if(chart){
+
+        chart.destroy();
+
+    }
+
+    chart = new Chart(ctx,{
+
+        type:'line',
+
+        data:{
+
+            labels:[
+                'Mon',
+                'Tue',
+                'Wed',
+                'Thu',
+                'Fri',
+                'Sat',
+                'Sun'
+            ],
+
+            datasets:[{
+
+                label:'AQI Level',
+
+                data:[
+                    aqi-40,
+                    aqi-20,
+                    aqi,
+                    aqi+30,
+                    aqi-10,
+                    aqi+20,
+                    aqi
+                ],
+
+                borderWidth:4,
+
+                tension:0.4
+
+            }]
+
+        },
+
+        options:{
+
+            responsive:true,
+
+            plugins:{
+                legend:{
+                    labels:{
+                        color:'white'
+                    }
+                }
+            },
+
+            scales:{
+
+                x:{
+                    ticks:{
+                        color:'white'
+                    }
+                },
+
+                y:{
+                    ticks:{
+                        color:'white'
+                    }
+                }
+
+            }
+
+        }
+
+    });
+
+}
+
 </script>
 
 </body>
